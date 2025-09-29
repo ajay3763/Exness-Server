@@ -9,7 +9,7 @@ const app = express();
 app.use(cors()); // <-- YEH NAYI LINE ADD KI HAI
 const PORT = 3000;
 const DB_PATH = path.join(__dirname, 'db.json');
-const ADMIN_PASSWORD = "admin123"; // Aap isse badal sakte hain
+const ADMIN_PASSWORD = "gatsbybarbie@1234"; // Aap isse badal sakte hain
 
 // --- Middleware ---
 app.use(express.json()); // JSON data ko samajhne ke liye
