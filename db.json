@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "id": "eaaf8c52-21cd-494a-bb8d-3e92e59e8dbe",
+      "licenseKey": "KEY-62F4B4AF-0CDF-4DDB",
+      "email": "adfshjjaksh@gmail.com",
+      "telegramId": "skjfsilah",
+      "mobile": "38743874874",
+      "amount": "328738898",
+      "expiryDate": "2025-09-02",
+      "isActive": false,
+      "deviceId": null,
+      "lastSeen": null
+    },
+    {
+      "id": "c1ba5f8c-6929-4bb3-a21a-d05d102a02de",
+      "licenseKey": "KEY-F449FCEB-297C-496E",
+      "email": "wqkugkauk@gmail.com",
+      "telegramId": "akdhfdaklh",
+      "mobile": "3484244",
+      "amount": "34286438",
+      "expiryDate": "2026-09-29T04:07:19.260Z",
+      "isActive": true,
+      "deviceId": "1b8be07a-8521-4fc7-930f-8500d49f115b",
+      "lastSeen": "2025-09-29T04:21:11.120Z"
+    },
+    {
+      "id": "3f804fb7-d8b8-4369-87a4-2015d96e6cb7",
+      "licenseKey": "KEY-362D01C2-B8B4-43A4",
+      "email": "dfhsjdf@gmail.com",
+      "telegramId": "ahkrfikahj",
+      "mobile": "38765832",
+      "amount": "23422",
+      "expiryDate": "2026-09-29T04:28:56.705Z",
+      "isActive": true,
+      "deviceId": "f5e4e48e-12e5-4d25-a7a9-f3f27e5def03",
+      "lastSeen": "2025-09-29T11:47:54.423Z"
+    },
+    {
+      "id": "c5b9e13e-3518-4d1a-b3e2-d9f0a925423c",
+      "licenseKey": "KEY-6CC71C79-B9C0-47F1",
+      "email": "aliuhfakl@gmail.com",
+      "telegramId": "dfjgdkg",
+      "mobile": "34343r3",
+      "amount": "243",
+      "expiryDate": "2026-09-29T11:58:28.538Z",
+      "isActive": true,
+      "deviceId": "df5bf7e4-b053-4bde-ac8d-ffd080edd8d4",
+      "lastSeen": "2025-09-29T12:09:50.941Z"
+    }
+  ]
+}

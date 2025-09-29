@@ -1,0 +1,37 @@
+/* Using Google Fonts for better typography */
+body {
+    font-family: 'Inter', sans-serif;
+}
+
+/* Custom scrollbar for a cleaner look in WebKit browsers (Chrome, Safari) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #a8a8a8;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #888;
+}
+
+/* Smooth transition for modal */
+#user-modal {
+    transition: opacity 0.3s ease;
+}
+
+#user-modal > div {
+    transition: transform 0.3s ease;
+}
+
+#user-modal.hidden > div {
+    transform: scale(0.95);
+}
+
