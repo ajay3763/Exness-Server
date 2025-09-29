@@ -3,8 +3,10 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
+const cors = require('cors'); // <-- YEH NAYI LINE ADD KI HAI
 
 const app = express();
+app.use(cors()); // <-- YEH NAYI LINE ADD KI HAI
 const PORT = 3000;
 const DB_PATH = path.join(__dirname, 'db.json');
 const ADMIN_PASSWORD = "admin123"; // Aap isse badal sakte hain
