@@ -10,6 +10,7 @@
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.19.2", 
-    "express-rate-limit": "^7.3.0"  
+    "express-rate-limit": "^7.3.0", 
+    "mongoose": "^8.4.1" // ✅ FINAL FIX: Mongoose added
   }
 }
