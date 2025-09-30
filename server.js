@@ -3,24 +3,22 @@ const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
 const rateLimit = require("express-rate-limit");
-const mongoose = require('mongoose'); // ✅ Mongoose Added
+const mongoose = require('mongoose'); 
+const path = require('path'); // ✅ FINAL FIX: 'path' module को वापस जोड़ा गया
 
 const app = express();
 app.use(cors());
 
 // --- Database Connection & Schema ---
-// Render ENV Variable से DATABASE_URL प्राप्त करें
 const MONGODB_URI = process.env.DATABASE_URL; 
 
 mongoose.connect(MONGODB_URI, { 
     useNewUrlParser: true, 
     useUnifiedTopology: true,
-    // dbName: 'ExnessLicense' // अगर आपके URL में DB का नाम नहीं है तो यहाँ रखें
 })
 .then(() => console.log('MongoDB Atlas Connected Successfully!'))
 .catch(err => {
     console.error('MongoDB Connection Error: Ensure DATABASE_URL is set correctly.', err);
-    // अगर कनेक्शन फेल होता है तो सर्वर को बंद कर दें ताकि पता चल जाए
     process.exit(1); 
 });
 
@@ -28,20 +26,20 @@ mongoose.connect(MONGODB_URI, {
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
     email: { type: String, default: 'user@example.com' },
-    expiryDate: { type: Date, default: () => new Date(new Date().setFullYear(new Date().getFullYear() + 1)) }, // 1 साल आगे
+    expiryDate: { type: Date, default: () => new Date(new Date().setFullYear(new Date().getFullYear() + 1)) },
     isActive: { type: Boolean, default: true },
     deviceId: { type: String, default: null }, 
     lastSeen: { type: Date, default: null },
 });
 const License = mongoose.model('License', licenseSchema); 
 
-// ❌ OLD: fs, path, readDB, writeDB अब इस्तेमाल नहीं होंगे।
-const PORT = process.env.PORT || 3000; // Render के लिए PORT ENV का उपयोग करें
+// ❌ OLD: fs, readDB, writeDB अब इस्तेमाल नहीं होंगे।
+const PORT = process.env.PORT || 3000; 
 const ADMIN_PASSWORD = "gatsbybarbie@1234"; 
 
 // --- Middleware ---
 app.use(express.json()); 
-// यह सुनिश्चित करता है कि Admin Panel की फ़ाइलें मिलें
+// ✅ यह लाइन 'path' के वापस आने से अब काम करेगी।
 app.use(express.static(path.join(__dirname, 'public'))); 
 
 // Admin password check karne ke liye ek middleware
@@ -66,15 +64,14 @@ const adminLoginLimiter = rateLimit({
 
 // --- API Routes for Extension ---
 
-// POST /validate-license (अब Mongoose के साथ)
-app.post('/validate-license', async (req, res) => { // ✅ async जोड़ा गया
+// POST /validate-license (MongoDB से)
+app.post('/validate-license', async (req, res) => {
     const { licenseKey, deviceId } = req.body;
 
     if (!licenseKey || !deviceId) {
         return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
     }
 
-    // ✅ Find User (MongoDB)
     const user = await License.findOne({ licenseKey }); 
 
     if (!user) {
@@ -86,7 +83,7 @@ app.post('/validate-license', async (req, res) => { // ✅ async जोड़ा
     }
 
     const now = new Date();
-    if (now > user.expiryDate) { // Mongoose में expiryDate सीधा Date ऑब्जेक्ट है
+    if (now > user.expiryDate) { 
         return res.status(403).json({ valid: false, message: 'Your license has expired.' });
     }
     
@@ -95,14 +92,12 @@ app.post('/validate-license', async (req, res) => { // ✅ async जोड़ा
         return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
     }
 
-    // Device ID save करें
     if (!user.deviceId) {
         user.deviceId = deviceId;
     }
     
-    // Last seen update करें और सेव करें
-    user.lastSeen = new Date(); // Mongoose Date
-    await user.save(); // ✅ Save to MongoDB
+    user.lastSeen = new Date(); 
+    await user.save(); 
 
     res.json({
         valid: true,
@@ -125,30 +120,28 @@ app.post('/admin-login', adminLoginLimiter, (req, res) => {
 });
 
 // GET /api/users (MongoDB से सभी यूज़र्स प्राप्त करें)
-app.get('/api/users', checkAdminAuth, async (req, res) => { // ✅ async जोड़ा गया
-    const users = await License.find({}); // ✅ Find all users from MongoDB
+app.get('/api/users', checkAdminAuth, async (req, res) => {
+    const users = await License.find({}); 
     res.json(users);
 });
 
 // POST /api/users (नया यूज़र बनाएँ)
-app.post('/api/users', checkAdminAuth, async (req, res) => { // ✅ async जोड़ा गया
+app.post('/api/users', checkAdminAuth, async (req, res) => { 
     const { email, licenseKey } = req.body;
     
-    const newUser = await License.create({ // ✅ Mongoose Create
+    const newUser = await License.create({ 
         email,
         licenseKey,
-        // expiryDate, isActive, deviceId, lastSeen default स्कीमा से आएंगे
     });
 
     res.status(201).json(newUser);
 });
 
 // PUT /api/users/:id (यूज़र डेटा अपडेट करें)
-app.put('/api/users/:id', checkAdminAuth, async (req, res) => { // ✅ async जोड़ा गया
+app.put('/api/users/:id', checkAdminAuth, async (req, res) => { 
     const { id } = req.params;
     const updateFields = req.body;
 
-    // LicenseKey के बजाय MongoDB की _id से अपडेट करें
     const updatedUser = await License.findByIdAndUpdate(
         id, 
         { $set: updateFields },
@@ -163,9 +156,9 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => { // ✅ async ज
 });
 
 // DELETE /api/users/:id (यूज़र को डिलीट करें)
-app.delete('/api/users/:id', checkAdminAuth, async (req, res) => { // ✅ async जोड़ा गया
+app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     const { id } = req.params;
-    const result = await License.findByIdAndDelete(id); // ✅ Mongoose Delete
+    const result = await License.findByIdAndDelete(id); 
     
     if (result) {
         res.status(204).send(); 
@@ -175,7 +168,7 @@ app.delete('/api/users/:id', checkAdminAuth, async (req, res) => { // ✅ async 
 });
 
 // POST /api/users/:id/reset-device
-app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => { // ✅ async जोड़ा गया
+app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     const { id } = req.params;
     
     const user = await License.findByIdAndUpdate(
@@ -193,7 +186,6 @@ app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => { //
 
 
 // --- Server Start ---
-// सुनिश्चित करें कि MongoDB कनेक्शन सफल होने के बाद ही सर्वर स्टार्ट हो 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
     console.log('Admin Panel is available at http://localhost:3000');
