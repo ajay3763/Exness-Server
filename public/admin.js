@@ -1,4 +1,4 @@
-// --- Admin Panel JavaScript (V3 - Improved UI) ---
+// --- Admin Panel JavaScript (V4 - Corrected ID Handling) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- Basic Setup & Auth ---
     const password = sessionStorage.getItem('admin-password');
@@ -69,6 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = user.isActive && !isExpired ? 'Active' : (isExpired ? 'Expired' : 'Inactive');
             const lastSeen = user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN') : 'Never';
             
+            // ✅ FIX 1: Changed user.id to user._id
             const row = `
                 <tr class="border-b border-gray-200 hover:bg-gray-50">
                     <td class="py-3 px-6 text-left">
@@ -78,12 +79,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td class="py-3 px-6 text-left"><code class="text-sm bg-gray-200 px-2 py-1 rounded">${user.licenseKey}</code></td>
                     <td class="py-3 px-6 text-left"><code class="text-xs">${user.deviceId || 'N/A'}</code></td>
                     <td class="py-3 px-6 text-left text-xs">${lastSeen}</td>
-                    <td class="py-3 px-6 text-center">${user.expiryDate}</td>
+                    <td class="py-3 px-6 text-center">${new Date(user.expiryDate).toLocaleDateString('en-IN')}</td>
                     <td class="py-3 px-6 text-center"><span class="px-2 py-1 font-semibold leading-tight ${statusClass} rounded-full text-xs">${statusText}</span></td>
                     <td class="py-3 px-6 text-center">
                         <div class="flex item-center justify-center space-x-2">
-                            <button data-id="${user.id}" class="edit-btn p-1 text-blue-500 hover:text-blue-700" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"/></svg></button>
-                            <button data-id="${user.id}" class="delete-btn p-1 text-red-500 hover:text-red-700" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
+                            <button data-id="${user._id}" class="edit-btn p-1 text-blue-500 hover:text-blue-700" title="Edit"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L14.732 3.732z"/></svg></button>
+                            <button data-id="${user._id}" class="delete-btn p-1 text-red-500 hover:text-red-700" title="Delete"><svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg></button>
                         </div>
                     </td>
                 </tr>
@@ -97,13 +98,15 @@ document.addEventListener('DOMContentLoaded', () => {
         userForm.reset();
         if (user) {
             modalTitle.textContent = 'Edit User';
-            document.getElementById('user-id').value = user.id;
+            // ✅ FIX 2: Changed user.id to user._id
+            document.getElementById('user-id').value = user._id; 
             document.getElementById('licenseKey').value = user.licenseKey;
             document.getElementById('email').value = user.email;
+            // Assuming other fields might not exist in the provided schema, added checks
             document.getElementById('telegramId').value = user.telegramId || '';
             document.getElementById('mobile').value = user.mobile || '';
             document.getElementById('amount').value = user.amount || '';
-            document.getElementById('expiryDate').value = user.expiryDate;
+            document.getElementById('expiryDate').value = new Date(user.expiryDate).toISOString().split('T')[0];
             document.getElementById('isActive').checked = user.isActive;
             if (user.deviceId) {
                 document.getElementById('deviceId').value = user.deviceId;
@@ -191,7 +194,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const id = btn.dataset.id;
         if (btn.classList.contains('edit-btn')) {
-            const userToEdit = allUsers.find(u => u.id === id);
+            // ✅ FIX 3: Changed u.id to u._id
+            const userToEdit = allUsers.find(u => u._id === id); 
             if (userToEdit) openModal(userToEdit);
         }
 
@@ -207,4 +211,3 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Initial Load ---
     fetchUsers();
 });
-
