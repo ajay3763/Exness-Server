@@ -1,4 +1,4 @@
-// --- Node.js Server (V5: Final, Robust & Fully Error Handled) ---
+// --- Node.js Server (Final Corrected Version) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -8,13 +8,10 @@ const path = require('path');
 
 const app = express();
 
-// ✅ Render पर Rate Limiter को सही ढंग से काम करने के लिए
 app.set('trust proxy', 1);
-
 app.use(cors());
 
 // --- Database Connection & Schema ---
-// सुनिश्चित करें कि Render पर DATABASE_URL और ADMIN_PASSWORD एनवायरनमेंट वेरिएबल में सेट हैं।
 const MONGODB_URI = process.env.DATABASE_URL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "gatsbybarbie@1234";
 
@@ -28,7 +25,6 @@ mongoose.connect(MONGODB_URI, {
     process.exit(1);
 });
 
-// Mongoose स्कीमा (License Data Structure)
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
     email: { type: String, default: 'user@example.com' },
@@ -39,11 +35,11 @@ const licenseSchema = new mongoose.Schema({
 });
 const License = mongoose.model('License', licenseSchema);
 
-const PORT = process.env.PORT || 10000; // Render के लिए PORT 10000 बेहतर है
+const PORT = process.env.PORT || 10000;
 
 // --- Middleware ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // यह 'public' फोल्डर को सर्व करेगा
+app.use(express.static(path.join(__dirname, 'public')));
 
 const checkAdminAuth = (req, res, next) => {
     const password = req.headers['x-admin-password'];
@@ -62,10 +58,7 @@ const adminLoginLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-
 // --- API Routes for Extension ---
-
-// POST /validate-license
 app.post('/validate-license', async (req, res) => {
     try {
         const { licenseKey, deviceId } = req.body;
@@ -102,10 +95,7 @@ app.post('/validate-license', async (req, res) => {
     }
 });
 
-
 // --- API Routes for Admin Panel ---
-
-// POST /admin-login
 app.post('/admin-login', adminLoginLimiter, (req, res) => {
     const { password } = req.body;
     if (password === ADMIN_PASSWORD) {
@@ -115,7 +105,6 @@ app.post('/admin-login', adminLoginLimiter, (req, res) => {
     }
 });
 
-// GET /api/users
 app.get('/api/users', checkAdminAuth, async (req, res) => {
     try {
         const users = await License.find({});
@@ -126,7 +115,6 @@ app.get('/api/users', checkAdminAuth, async (req, res) => {
     }
 });
 
-// POST /api/users
 app.post('/api/users', checkAdminAuth, async (req, res) => {
     try {
         const { email, licenseKey } = req.body;
@@ -141,7 +129,6 @@ app.post('/api/users', checkAdminAuth, async (req, res) => {
     }
 });
 
-// PUT /api/users/:id (Edit, Terminate, Extend करने के लिए)
 app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -150,7 +137,7 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
         }
         const updatedUser = await License.findByIdAndUpdate(
             id,
-            { $set: req.body }, 
+            { $set: req.body },
             { new: true }
         );
         if (updatedUser) {
@@ -164,7 +151,6 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     }
 });
 
-// DELETE /api/users/:id
 app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -183,7 +169,6 @@ app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     }
 });
 
-// POST /api/users/:id/reset-device
 app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -206,16 +191,11 @@ app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     }
 });
 
-
-// =================================================================
-// ===== ✅✅✅ YEH ZAROORI CODE ADD KIYA GAYA HAI ✅✅✅ =====
-// --- Admin Panel Ke Liye Catch-all Route ---
+// --- Catch-all Route to Serve the Main HTML Page ---
 // Yeh hamesha baaki saare API routes ke baad aana chahiye
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-// =================================================================
-
 
 // --- Server Start ---
 app.listen(PORT, () => {
