@@ -39,11 +39,11 @@ const licenseSchema = new mongoose.Schema({
 });
 const License = mongoose.model('License', licenseSchema);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // Render के लिए PORT 10000 बेहतर है
 
 // --- Middleware ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public'))); // यह 'public' फोल्डर को सर्व करेगा
 
 const checkAdminAuth = (req, res, next) => {
     const password = req.headers['x-admin-password'];
@@ -145,13 +145,12 @@ app.post('/api/users', checkAdminAuth, async (req, res) => {
 app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        // ✅ ADDED: ID validation to prevent crashes
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'Invalid user ID format.' });
         }
         const updatedUser = await License.findByIdAndUpdate(
             id,
-            { $set: req.body }, // जो भी डेटा फ्रंटएंड से आएगा, वह अपडेट हो जाएगा
+            { $set: req.body }, 
             { new: true }
         );
         if (updatedUser) {
@@ -160,7 +159,6 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
             res.status(404).json({ message: 'User not found' });
         }
     } catch (error) {
-        // ✅ ADDED: Error logging to prevent crashes
         console.error('--- UPDATE USER FAILED, ERROR: ---', error);
         res.status(500).json({ message: 'Failed to update user.' });
     }
@@ -170,7 +168,6 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
 app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        // ✅ ADDED: ID validation to prevent crashes
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'Invalid user ID format.' });
         }
@@ -181,7 +178,6 @@ app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
             res.status(404).json({ message: 'User not found' });
         }
     } catch (error) {
-        // ✅ ADDED: Error logging to prevent crashes
         console.error('--- DELETE USER FAILED, ERROR: ---', error);
         res.status(500).json({ message: 'Failed to delete user.' });
     }
@@ -191,7 +187,6 @@ app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
 app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
-        // ✅ ADDED: ID validation to prevent crashes
         if (!mongoose.Types.ObjectId.isValid(id)) {
             return res.status(400).json({ message: 'Invalid user ID format.' });
         }
@@ -206,11 +201,20 @@ app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
             res.status(404).json({ message: 'User not found' });
         }
     } catch (error) {
-        // ✅ ADDED: Error logging to prevent crashes
         console.error('--- RESET DEVICE FAILED, ERROR: ---', error);
         res.status(500).json({ message: 'Failed to reset device ID.' });
     }
 });
+
+
+// =================================================================
+// ===== ✅✅✅ YEH ZAROORI CODE ADD KIYA GAYA HAI ✅✅✅ =====
+// --- Admin Panel Ke Liye Catch-all Route ---
+// Yeh hamesha baaki saare API routes ke baad aana chahiye
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+// =================================================================
 
 
 // --- Server Start ---
