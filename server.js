@@ -14,7 +14,6 @@ app.set('trust proxy', 1);
 app.use(cors());
 
 // --- Database Connection & Schema ---
-// सुनिश्चित करें कि Render पर DATABASE_URL और ADMIN_PASSWORD एनवायरनमेंट वेरिएबल में सेट हैं।
 const MONGODB_URI = process.env.DATABASE_URL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "gatsbybarbie@1234";
 
@@ -32,13 +31,9 @@ mongoose.connect(MONGODB_URI, {
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
     email: { type: String, default: 'user@example.com' },
-    
-    // --- ✅ YEH FIELDS ADD KIYE GAYE HAIN ---
     mobile: { type: String, default: null },
     telegramId: { type: String, default: null },
     amount: { type: Number, default: null },
-    // --- ------------------------------------
-    
     expiryDate: { type: Date, default: () => new Date(new Date().setFullYear(new Date().getFullYear() + 1)) },
     isActive: { type: Boolean, default: true },
     deviceId: { type: String, default: null },
@@ -46,11 +41,11 @@ const licenseSchema = new mongoose.Schema({
 });
 const License = mongoose.model('License', licenseSchema);
 
-const PORT = process.env.PORT || 10000; // Render के लिए PORT 10000 बेहतर है
+const PORT = process.env.PORT || 10000;
 
 // --- Middleware ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // यह 'public' फोल्डर को सर्व करेगा
+app.use(express.static(path.join(__dirname, 'public')));
 
 const checkAdminAuth = (req, res, next) => {
     const password = req.headers['x-admin-password'];
@@ -75,36 +70,61 @@ const adminLoginLimiter = rateLimit({
 // POST /validate-license
 app.post('/validate-license', async (req, res) => {
     try {
+        // --- ✅ DEBUGGING LOGS START HERE ---
+        console.log("\n--- [NEW REQUEST] License Validation Started ---");
         const { licenseKey, deviceId } = req.body;
+        
+        console.log(`Incoming Key: ${licenseKey}, Incoming DeviceID: ${deviceId}`);
+
         if (!licenseKey || !deviceId) {
             return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
         }
+        
         const user = await License.findOne({ licenseKey });
+        
         if (!user) {
+            console.log("Result: FAILED. License key not found in DB.");
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
+        
+        console.log(`DB Record Found: Email=${user.email}, DB_DeviceID=${user.deviceId}, IsActive=${user.isActive}`);
+
         if (!user.isActive) {
+            console.log("Result: FAILED. License is not active.");
             return res.status(403).json({ valid: false, message: 'This license has been terminated.' });
         }
+        
         const now = new Date();
         if (now > user.expiryDate) {
+            console.log("Result: FAILED. License has expired.");
             return res.status(403).json({ valid: false, message: 'Your license has expired.' });
         }
+
+        // --- Main Device Locking Logic ---
         if (user.deviceId && user.deviceId !== deviceId) {
+            console.log(`Result: FAILED. Device ID mismatch. DB has ${user.deviceId}, request has ${deviceId}.`);
             return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
         }
+
         if (!user.deviceId) {
+            console.log("Result: SUCCESS. First activation. Saving new device ID.");
             user.deviceId = deviceId;
+        } else {
+            console.log("Result: SUCCESS. Device ID matched.");
         }
+        
         user.lastSeen = new Date();
         await user.save();
+        
+        console.log("--- Request Finished Successfully ---");
         res.json({
             valid: true,
             user: user.email,
             message: 'License validated successfully.'
         });
+        // --- ✅ DEBUGGING LOGS END HERE ---
     } catch (error) {
-        console.error('--- VALIDATION FAILED, ERROR: ---', error);
+        console.error('--- VALIDATION FAILED WITH SERVER ERROR: ---', error);
         res.status(500).json({ valid: false, message: 'An internal server error occurred.' });
     }
 });
@@ -148,7 +168,7 @@ app.post('/api/users', checkAdminAuth, async (req, res) => {
     }
 });
 
-// PUT /api/users/:id (Edit, Terminate, Extend करने के लिए)
+// PUT /api/users/:id
 app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -157,7 +177,7 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
         }
         const updatedUser = await License.findByIdAndUpdate(
             id,
-            { $set: req.body }, 
+            { $set: req.body },
             { new: true }
         );
         if (updatedUser) {
@@ -213,16 +233,10 @@ app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     }
 });
 
-
-// =================================================================
-// ===== ✅✅✅ YEH ZAROORI CODE ADD KIYA GAYA HAI ✅✅✅ =====
-// --- Admin Panel Ke Liye Catch-all Route ---
-// Yeh hamesha baaki saare API routes ke baad aana chahiye
+// --- Admin Panel's Catch-all Route ---
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-// =================================================================
-
 
 // --- Server Start ---
 app.listen(PORT, () => {
