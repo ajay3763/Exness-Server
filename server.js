@@ -32,6 +32,13 @@ mongoose.connect(MONGODB_URI, {
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
     email: { type: String, default: 'user@example.com' },
+    
+    // --- ✅ YEH FIELDS ADD KIYE GAYE HAIN ---
+    mobile: { type: String, default: null },
+    telegramId: { type: String, default: null },
+    amount: { type: Number, default: null },
+    // --- ------------------------------------
+    
     expiryDate: { type: Date, default: () => new Date(new Date().setFullYear(new Date().getFullYear() + 1)) },
     isActive: { type: Boolean, default: true },
     deviceId: { type: String, default: null },
