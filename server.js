@@ -15,7 +15,7 @@ app.use(cors());
 
 // --- Database Connection & Schema ---
 const MONGODB_URI = process.env.DATABASE_URL;
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "gatsbybarbie@1234";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;
 
 mongoose.connect(MONGODB_URI, {
     useNewUrlParser: true,
