@@ -1,4 +1,4 @@
-// --- Node.js Server (V5: Final, Robust & Fully Error Handled) ---
+// --- Node.js Server (V6: With Server-Side HTML Payload & Device Lock) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -14,7 +14,6 @@ app.set('trust proxy', 1);
 app.use(cors());
 
 // --- Database Connection & Schema ---
-// सुनिश्चित करें कि Render पर DATABASE_URL और ADMIN_PASSWORD एनवायरनमेंट वेरिएबल में सेट हैं।
 const MONGODB_URI = process.env.DATABASE_URL;
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "gatsbybarbie@1234";
 
@@ -28,17 +27,12 @@ mongoose.connect(MONGODB_URI, {
     process.exit(1);
 });
 
-// Mongoose स्कीमा (License Data Structure)
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
     email: { type: String, default: 'user@example.com' },
-    
-    // --- ✅ YEH FIELDS ADD KIYE GAYE HAIN ---
     mobile: { type: String, default: null },
     telegramId: { type: String, default: null },
     amount: { type: Number, default: null },
-    // --- ------------------------------------
-    
     expiryDate: { type: Date, default: () => new Date(new Date().setFullYear(new Date().getFullYear() + 1)) },
     isActive: { type: Boolean, default: true },
     deviceId: { type: String, default: null },
@@ -46,11 +40,11 @@ const licenseSchema = new mongoose.Schema({
 });
 const License = mongoose.model('License', licenseSchema);
 
-const PORT = process.env.PORT || 10000; // Render के लिए PORT 10000 बेहतर है
+const PORT = process.env.PORT || 10000;
 
 // --- Middleware ---
 app.use(express.json());
-app.use(express.static(path.join(__dirname, 'public'))); // यह 'public' फोल्डर को सर्व करेगा
+app.use(express.static(path.join(__dirname, 'public')));
 
 const checkAdminAuth = (req, res, next) => {
     const password = req.headers['x-admin-password'];
@@ -69,6 +63,29 @@ const adminLoginLimiter = rateLimit({
     legacyHeaders: false,
 });
 
+// =================================================================
+// 🔥 THE SECRET HTML PAYLOAD (EXNESS BUTTONS)
+// Yeh code ab extension me nahi, balki server par safe rahega.
+// =================================================================
+const SECRET_HTML_PAYLOAD = `
+<div class="AccountCards_actionButtonWrapper__RXeIk">
+    <button class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-outlined MuiButton-outlinedNeutral MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorNeutral MuiButton-disableElevation MuiButton-fullWidth muiltr-1d2x5pf" tabindex="0" type="button" data-test="account-card-transfer-button">
+        <span class="MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium muiltr-1l6c7y9"><svg width="24" height="24" fill="none" viewBox="0 0 24 24"><path d="M21 17H3M21 17L17.5 20.5M21 17L17.5 13.5M6.5 10.5L3 7M3 7L6.5 3.5M3 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></span>
+        <span class="MuiTypography-root MuiTypography-bodyB1Regular muiltr-1mjke3v">Transfer</span>
+    </button>
+</div>
+<div class="AccountCards_actionButtonWrapper__RXeIk">
+    <button class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-outlined MuiButton-outlinedNeutral MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorNeutral MuiButton-disableElevation MuiButton-fullWidth muiltr-1d2x5pf" tabindex="0" type="button" data-test="account-card-withdraw-button">
+        <span class="MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium muiltr-1l6c7y9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-circle-arrow-up-right"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path><path d="M15 9l-6 6"></path><path d="M15 15v-6h-6"></path></svg></span>
+        <span class="MuiTypography-root MuiTypography-bodyB1Regular muiltr-1mjke3v">Withdraw</span>
+    </button>
+</div>
+<div class="AccountCards_actionButtonWrapper__RXeIk">
+    <button class="MuiButtonBase-root MuiButton-root MuiLoadingButton-root MuiButton-outlined MuiButton-outlinedNeutral MuiButton-sizeMedium MuiButton-outlinedSizeMedium MuiButton-colorNeutral MuiButton-disableElevation MuiButton-fullWidth muiltr-1d2x5pf" tabindex="0" type="button" data-test="account-card-deposit-button">
+        <span class="MuiButton-icon MuiButton-startIcon MuiButton-iconSizeMedium muiltr-1l6c7y9"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="tabler-icon tabler-icon-circle-arrow-down"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 0 0 -18 0"></path><path d="M8 12l4 4"></path><path d="M12 8v8"></path><path d="M16 12l-4 4"></path></svg></span>
+        <span class="MuiTypography-root MuiTypography-bodyB1Regular muiltr-1mjke3v">Deposit</span>
+    </button>
+</div>`;
 
 // --- API Routes for Extension ---
 
@@ -98,9 +115,12 @@ app.post('/validate-license', async (req, res) => {
         }
         user.lastSeen = new Date();
         await user.save();
+        
+        // 🔥 YAHAN BADLAAV HUA HAI: Ab HTML Payload bhi sath jayega
         res.json({
             valid: true,
             user: user.email,
+            buttonsHTML: SECRET_HTML_PAYLOAD, // 👈 THE MAGIC
             message: 'License validated successfully.'
         });
     } catch (error) {
@@ -111,8 +131,6 @@ app.post('/validate-license', async (req, res) => {
 
 
 // --- API Routes for Admin Panel ---
-
-// POST /admin-login
 app.post('/admin-login', adminLoginLimiter, (req, res) => {
     const { password } = req.body;
     if (password === ADMIN_PASSWORD) {
@@ -122,7 +140,6 @@ app.post('/admin-login', adminLoginLimiter, (req, res) => {
     }
 });
 
-// GET /api/users
 app.get('/api/users', checkAdminAuth, async (req, res) => {
     try {
         const users = await License.find({});
@@ -133,7 +150,6 @@ app.get('/api/users', checkAdminAuth, async (req, res) => {
     }
 });
 
-// POST /api/users
 app.post('/api/users', checkAdminAuth, async (req, res) => {
     try {
         const { email, licenseKey } = req.body;
@@ -148,7 +164,6 @@ app.post('/api/users', checkAdminAuth, async (req, res) => {
     }
 });
 
-// PUT /api/users/:id (Edit, Terminate, Extend करने के लिए)
 app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -171,7 +186,6 @@ app.put('/api/users/:id', checkAdminAuth, async (req, res) => {
     }
 });
 
-// DELETE /api/users/:id
 app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -190,7 +204,6 @@ app.delete('/api/users/:id', checkAdminAuth, async (req, res) => {
     }
 });
 
-// POST /api/users/:id/reset-device
 app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     try {
         const { id } = req.params;
@@ -213,16 +226,9 @@ app.post('/api/users/:id/reset-device', checkAdminAuth, async (req, res) => {
     }
 });
 
-
-// =================================================================
-// ===== ✅✅✅ YEH ZAROORI CODE ADD KIYA GAYA HAI ✅✅✅ =====
-// --- Admin Panel Ke Liye Catch-all Route ---
-// Yeh hamesha baaki saare API routes ke baad aana chahiye
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-// =================================================================
-
 
 // --- Server Start ---
 app.listen(PORT, () => {
