@@ -1,4 +1,4 @@
-// --- Node.js Server (V6: With Server-Side HTML Payload & Device Lock) ---
+// --- Node.js Server (V6: With Server-Side HTML Payload, Device Lock & Strict Expiry) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -116,11 +116,12 @@ app.post('/validate-license', async (req, res) => {
         user.lastSeen = new Date();
         await user.save();
         
-        // 🔥 YAHAN BADLAAV HUA HAI: Ab HTML Payload bhi sath jayega
+        // 🔥 YAHAN BADLAAV HUA HAI: Ab HTML Payload aur Expiry Date dono sath jayenge
         res.json({
             valid: true,
             user: user.email,
             buttonsHTML: SECRET_HTML_PAYLOAD, // 👈 THE MAGIC
+            expiryDate: user.expiryDate,      // 👈 STRICT EXPIRATION KE LIYE ADD KIYA
             message: 'License validated successfully.'
         });
     } catch (error) {
