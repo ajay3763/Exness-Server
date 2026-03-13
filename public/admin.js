@@ -1,4 +1,4 @@
-// --- Admin Panel JavaScript (V4 - Corrected ID Handling) ---
+// --- Admin Panel JavaScript (V5 - Dual Platform Supported) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- Basic Setup & Auth ---
     const password = sessionStorage.getItem('admin-password');
@@ -25,13 +25,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
     const logoutBtn = document.getElementById('logout-btn');
 
-    let allUsers = []; // Store all users to filter locally
+    let allUsers = []; 
 
     // --- API & Data Functions ---
     const fetchUsers = async () => {
         try {
             const response = await fetch('/api/users', { headers: apiHeaders });
-            if (response.status === 401) { // Unauthorized
+            if (response.status === 401) { 
                 logout();
                 return;
             }
@@ -40,7 +40,7 @@ document.addEventListener('DOMContentLoaded', () => {
             updateStats();
         } catch (error) {
             console.error('Error fetching users:', error);
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-4 text-red-500">Failed to load user data.</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-red-500">Failed to load user data.</td></tr>`;
         }
     };
 
@@ -60,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!users || users.length === 0) {
             const searchText = searchInput.value;
             const message = searchText ? 'No users match your search.' : 'No users found. Add one to get started!';
-            tableBody.innerHTML = `<tr><td colspan="7" class="text-center py-8 text-gray-500">${message}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-gray-500">${message}</td></tr>`;
             return;
         }
         users.forEach(user => {
@@ -69,12 +69,18 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = user.isActive && !isExpired ? 'Active' : (isExpired ? 'Expired' : 'Inactive');
             const lastSeen = user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN') : 'Never';
             
-            // ✅ FIX 1: Changed user.id to user._id
+            // 🔥 NAYA: Platform Badge setup
+            const platformName = user.platform === 'quotex' ? 'Quotex' : 'Exness';
+            const platformClass = user.platform === 'quotex' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-yellow-100 text-yellow-800 border border-yellow-300';
+            
             const row = `
                 <tr class="border-b border-gray-200 hover:bg-gray-50">
                     <td class="py-3 px-6 text-left">
                         <div class="font-medium">${user.email}</div>
                         <div class="text-xs text-gray-500">${user.mobile || 'No mobile'}</div>
+                    </td>
+                    <td class="py-3 px-6 text-left">
+                        <span class="px-2 py-1 font-bold text-xs rounded-lg ${platformClass}">${platformName}</span>
                     </td>
                     <td class="py-3 px-6 text-left"><code class="text-sm bg-gray-200 px-2 py-1 rounded">${user.licenseKey}</code></td>
                     <td class="py-3 px-6 text-left"><code class="text-xs">${user.deviceId || 'N/A'}</code></td>
@@ -98,16 +104,19 @@ document.addEventListener('DOMContentLoaded', () => {
         userForm.reset();
         if (user) {
             modalTitle.textContent = 'Edit User';
-            // ✅ FIX 2: Changed user.id to user._id
             document.getElementById('user-id').value = user._id; 
+            
+            // 🔥 NAYA: Edit form mein Platform set karna
+            document.getElementById('platform').value = user.platform || 'exness';
+            
             document.getElementById('licenseKey').value = user.licenseKey;
             document.getElementById('email').value = user.email;
-            // Assuming other fields might not exist in the provided schema, added checks
             document.getElementById('telegramId').value = user.telegramId || '';
             document.getElementById('mobile').value = user.mobile || '';
             document.getElementById('amount').value = user.amount || '';
             document.getElementById('expiryDate').value = new Date(user.expiryDate).toISOString().split('T')[0];
             document.getElementById('isActive').checked = user.isActive;
+            
             if (user.deviceId) {
                 document.getElementById('deviceId').value = user.deviceId;
                 deviceIdSection.classList.remove('hidden');
@@ -117,6 +126,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             modalTitle.textContent = 'Add New User';
             document.getElementById('user-id').value = '';
+            document.getElementById('platform').value = 'exness'; // Default to Exness
             document.getElementById('isActive').checked = true;
             deviceIdSection.classList.add('hidden');
         }
@@ -140,7 +150,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const filteredUsers = allUsers.filter(user => 
             user.email.toLowerCase().includes(searchTerm) ||
             user.licenseKey.toLowerCase().includes(searchTerm) ||
-            (user.mobile && user.mobile.toLowerCase().includes(searchTerm))
+            (user.mobile && user.mobile.toLowerCase().includes(searchTerm)) ||
+            (user.platform && user.platform.toLowerCase().includes(searchTerm)) // Allow searching by platform
         );
         renderTable(filteredUsers);
     });
@@ -167,6 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
         e.preventDefault();
         const id = document.getElementById('user-id').value;
         const userData = {
+            // 🔥 NAYA: Form save karte time platform bhejna
+            platform: document.getElementById('platform').value,
             licenseKey: document.getElementById('licenseKey').value,
             email: document.getElementById('email').value,
             telegramId: document.getElementById('telegramId').value,
@@ -184,7 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeModal();
             fetchUsers();
         } else {
-            alert('Failed to save user.');
+            alert('Failed to save user. Maybe License Key is duplicate?');
         }
     });
 
@@ -194,7 +207,6 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const id = btn.dataset.id;
         if (btn.classList.contains('edit-btn')) {
-            // ✅ FIX 3: Changed u.id to u._id
             const userToEdit = allUsers.find(u => u._id === id); 
             if (userToEdit) openModal(userToEdit);
         }
