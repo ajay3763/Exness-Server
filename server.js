@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const path = require('path');
 
 // Quotex ka secret payload import kiya
-const { QUOTEX_SECRET_HTML } = require('./quotexPayload');
+const { QUOTEX_SECRET_HTML } = require('./qx');
 
 const app = express();
 app.set('trust proxy', 1);
