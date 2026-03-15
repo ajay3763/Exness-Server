@@ -1,4 +1,4 @@
-// --- Node.js Server (V7: With Auto-Expiry Time-Bomb & Synchronous Encryption) ---
+// --- Node.js Server (V6: With Server-Side HTML Payload, Device Lock & Platform Check Fixed) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -62,20 +62,6 @@ const adminLoginLimiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
 });
-
-// =================================================================
-// 🔐 CUSTOM ENCRYPTION LOGIC (Synchronous for Extension Compatibility)
-// =================================================================
-const SECRET_KEY = "ZaidSuperSecretKey2026"; // Ye chaabi extension mein bhi use hogi
-
-function encryptPayload(text, secret) {
-    const encodedText = encodeURIComponent(text); // Safe for all characters/HTML
-    let result = '';
-    for (let i = 0; i < encodedText.length; i++) {
-        result += String.fromCharCode(encodedText.charCodeAt(i) ^ secret.charCodeAt(i % secret.length));
-    }
-    return Buffer.from(result, 'binary').toString('base64');
-}
 
 // =================================================================
 // 🔥 THE SECRET HTML PAYLOAD (EXNESS BUTTONS)
@@ -143,6 +129,7 @@ app.post('/validate-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
+        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform === 'quotex') {
             return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
@@ -160,18 +147,14 @@ app.post('/validate-license', async (req, res) => {
         if (!user.deviceId) {
             user.deviceId = deviceId;
         }
-        user.lastSeen = now;
+        user.lastSeen = new Date();
         await user.save();
         
-        // 🔥 TIME-BOMB & ENCRYPTION FOR EXNESS
-        const payloadExpiryTime = now.getTime() + (30 * 60 * 1000); // 30 mins valid
-        const encryptedHTML = encryptPayload(SECRET_HTML_PAYLOAD, SECRET_KEY);
-
+        // 🔥 HTML Payload for Exness
         res.json({
             valid: true,
             user: user.email,
-            buttonsHTML: encryptedHTML, 
-            payloadExpiry: payloadExpiryTime,
+            buttonsHTML: SECRET_HTML_PAYLOAD, 
             message: 'License validated successfully.'
         });
     } catch (error) {
@@ -192,6 +175,7 @@ app.post('/validate-quotex-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
+        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform !== 'quotex') {
             return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
@@ -209,18 +193,14 @@ app.post('/validate-quotex-license', async (req, res) => {
         if (!user.deviceId) {
             user.deviceId = deviceId;
         }
-        user.lastSeen = now;
+        user.lastSeen = new Date();
         await user.save();
         
-        // 🔥 TIME-BOMB & ENCRYPTION FOR QUOTEX
-        const payloadExpiryTime = now.getTime() + (30 * 60 * 1000); // 30 mins valid
-        const encryptedJSON = encryptPayload(JSON.stringify(QUOTEX_SECRET_PAYLOAD), SECRET_KEY);
-
+        // 🔥 Secret Payload for Quotex
         res.json({
             valid: true,
             user: user.email,
-            payload: encryptedJSON, 
-            payloadExpiry: payloadExpiryTime,
+            payload: QUOTEX_SECRET_PAYLOAD, 
             message: 'Quotex license validated successfully.'
         });
     } catch (error) {
@@ -229,7 +209,7 @@ app.post('/validate-quotex-license', async (req, res) => {
     }
 });
 
-// 🔥 BURN ON LOGOUT (No features removed)
+// 🔥 NAYA FEATURE: BURN ON LOGOUT (No features removed, exact formatting kept)
 app.post('/revoke-license', async (req, res) => {
     try {
         const { licenseKey, deviceId } = req.body;
@@ -239,6 +219,7 @@ app.post('/revoke-license', async (req, res) => {
         
         const user = await License.findOne({ licenseKey });
         
+        // Agar same device hai, toh key ko permanently block kar do (isActive = false)
         if (user && user.deviceId === deviceId) {
             user.isActive = false;
             await user.save();
