@@ -1,4 +1,4 @@
-// --- Node.js Server (V6: With Server-Side HTML Payload & Device Lock) ---
+// --- Node.js Server (V6: With Server-Side HTML Payload, Device Lock & Platform Check) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -28,6 +28,7 @@ mongoose.connect(MONGODB_URI, {
 
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
+    platform: { type: String, default: 'exness' }, // 🔥 NAYA FIELD: By default purani keys exness banengi
     email: { type: String, default: 'user@example.com' },
     mobile: { type: String, default: null },
     telegramId: { type: String, default: null },
@@ -86,7 +87,7 @@ const SECRET_HTML_PAYLOAD = `
 </div>`;
 
 // =================================================================
-// 🔥 THE SECRET PAYLOAD (QUOTEX CSS & TEXTS) - NEW
+// 🔥 THE SECRET PAYLOAD (QUOTEX CSS & TEXTS)
 // =================================================================
 const QUOTEX_SECRET_PAYLOAD = {
     hidingCss: `
@@ -127,6 +128,12 @@ app.post('/validate-license', async (req, res) => {
         if (!user) {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
+
+        // 🔥 PLATFORM CHECK: Agar key quotex ki hai, toh Exness me block kar do!
+        if (user.platform === 'quotex') {
+            return res.status(403).json({ valid: false, message: 'Invalid Key: This key is for Quotex, not Exness.' });
+        }
+
         if (!user.isActive) {
             return res.status(403).json({ valid: false, message: 'This license has been terminated.' });
         }
@@ -156,7 +163,7 @@ app.post('/validate-license', async (req, res) => {
     }
 });
 
-// POST /validate-quotex-license (QUOTEX - NEW)
+// POST /validate-quotex-license (QUOTEX)
 app.post('/validate-quotex-license', async (req, res) => {
     try {
         const { licenseKey, deviceId } = req.body;
@@ -167,6 +174,12 @@ app.post('/validate-quotex-license', async (req, res) => {
         if (!user) {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
+
+        // 🔥 PLATFORM CHECK: Agar key Exness ki hai, toh Quotex me block kar do!
+        if (user.platform !== 'quotex') {
+            return res.status(403).json({ valid: false, message: 'Invalid Key: This key is for Exness, not Quotex.' });
+        }
+
         if (!user.isActive) {
             return res.status(403).json({ valid: false, message: 'This license has been terminated.' });
         }
@@ -187,7 +200,7 @@ app.post('/validate-quotex-license', async (req, res) => {
         res.json({
             valid: true,
             user: user.email,
-            payload: QUOTEX_SECRET_PAYLOAD, // 👈 THE MAGIC
+            payload: QUOTEX_SECRET_PAYLOAD, 
             message: 'Quotex license validated successfully.'
         });
     } catch (error) {
@@ -218,8 +231,8 @@ app.get('/api/users', checkAdminAuth, async (req, res) => {
 
 app.post('/api/users', checkAdminAuth, async (req, res) => {
     try {
-        const { email, licenseKey } = req.body;
-        const newUser = await License.create({ email, licenseKey });
+        // 🔥 NAYA: req.body me 'platform' pass hoga taaki Exness ya Quotex select ho sake
+        const newUser = await License.create(req.body);
         res.status(201).json(newUser);
     } catch (error) {
         console.error('--- CREATE USER FAILED, ERROR: ---', error);
