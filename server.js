@@ -120,7 +120,7 @@ const QUOTEX_SECRET_PAYLOAD = {
 // POST /validate-license (EXNESS)
 app.post('/validate-license', async (req, res) => {
     try {
-        const { licenseKey, deviceId, isRevalidation } = req.body; // Added isRevalidation
+        const { licenseKey, deviceId, isRevalidation } = req.body;
         if (!licenseKey || !deviceId) {
             return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
         }
@@ -146,12 +146,12 @@ app.post('/validate-license', async (req, res) => {
             if (user.deviceId !== deviceId) {
                 return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
             }
-            // Agar UI se naya validation attempt hai (isRevalidation === false), toh block karo.
+            // Message changed here as requested!
             if (isRevalidation === false) {
-                return res.status(403).json({ valid: false, message: 'This key has already been used. Once removed, it cannot be reused.' });
+                return res.status(403).json({ valid: false, message: 'Invalid or expired key.' });
             }
         } else {
-            user.deviceId = deviceId; // Pehli baar device ID set ho rahi hai
+            user.deviceId = deviceId; 
         }
 
         user.lastSeen = new Date();
@@ -172,7 +172,7 @@ app.post('/validate-license', async (req, res) => {
 // POST /validate-quotex-license (QUOTEX)
 app.post('/validate-quotex-license', async (req, res) => {
     try {
-        const { licenseKey, deviceId, isRevalidation } = req.body; // Added isRevalidation
+        const { licenseKey, deviceId, isRevalidation } = req.body;
         if (!licenseKey || !deviceId) {
             return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
         }
@@ -198,12 +198,12 @@ app.post('/validate-quotex-license', async (req, res) => {
             if (user.deviceId !== deviceId) {
                 return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
             }
-            // Agar UI se naya validation attempt hai (isRevalidation === false), toh block karo.
+            // Message changed here as requested!
             if (isRevalidation === false) {
-                return res.status(403).json({ valid: false, message: 'This key has already been used. Once removed, it cannot be reused.' });
+                return res.status(403).json({ valid: false, message: 'Invalid or expired key.' });
             }
         } else {
-            user.deviceId = deviceId; // Pehli baar device ID set ho rahi hai
+            user.deviceId = deviceId; 
         }
 
         user.lastSeen = new Date();
