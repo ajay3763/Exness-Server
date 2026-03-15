@@ -1,4 +1,4 @@
-// --- Node.js Server (V6: With Server-Side HTML Payload, Device Lock & Platform Check) ---
+// --- Node.js Server (V6: With Server-Side HTML Payload, Device Lock & Platform Check Fixed) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -28,7 +28,7 @@ mongoose.connect(MONGODB_URI, {
 
 const licenseSchema = new mongoose.Schema({
     licenseKey: { type: String, required: true, unique: true },
-    platform: { type: String, default: 'exness' }, // 🔥 NAYA FIELD: By default purani keys exness banengi
+    platform: { type: String, default: 'exness' }, 
     email: { type: String, default: 'user@example.com' },
     mobile: { type: String, default: null },
     telegramId: { type: String, default: null },
@@ -129,9 +129,9 @@ app.post('/validate-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
-        // 🔥 PLATFORM CHECK: Agar key quotex ki hai, toh Exness me block kar do!
+        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform === 'quotex') {
-            return res.status(403).json({ valid: false, message: 'Invalid Key: This key is for Quotex, not Exness.' });
+            return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
 
         if (!user.isActive) {
@@ -175,9 +175,9 @@ app.post('/validate-quotex-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
-        // 🔥 PLATFORM CHECK: Agar key Exness ki hai, toh Quotex me block kar do!
+        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform !== 'quotex') {
-            return res.status(403).json({ valid: false, message: 'Invalid Key: This key is for Exness, not Quotex.' });
+            return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
 
         if (!user.isActive) {
@@ -231,7 +231,6 @@ app.get('/api/users', checkAdminAuth, async (req, res) => {
 
 app.post('/api/users', checkAdminAuth, async (req, res) => {
     try {
-        // 🔥 NAYA: req.body me 'platform' pass hoga taaki Exness ya Quotex select ho sake
         const newUser = await License.create(req.body);
         res.status(201).json(newUser);
     } catch (error) {
