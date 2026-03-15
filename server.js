@@ -120,7 +120,7 @@ const QUOTEX_SECRET_PAYLOAD = {
 // POST /validate-license (EXNESS)
 app.post('/validate-license', async (req, res) => {
     try {
-        const { licenseKey, deviceId } = req.body;
+        const { licenseKey, deviceId, isRevalidation } = req.body; // Added isRevalidation
         if (!licenseKey || !deviceId) {
             return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
         }
@@ -129,7 +129,6 @@ app.post('/validate-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
-        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform === 'quotex') {
             return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
@@ -141,16 +140,23 @@ app.post('/validate-license', async (req, res) => {
         if (now > user.expiryDate) {
             return res.status(403).json({ valid: false, message: 'Your license has expired.' });
         }
-        if (user.deviceId && user.deviceId !== deviceId) {
-            return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
+
+        // 🔥 STRICT ONE-TIME USE LOGIC
+        if (user.deviceId) {
+            if (user.deviceId !== deviceId) {
+                return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
+            }
+            // Agar UI se naya validation attempt hai (isRevalidation === false), toh block karo.
+            if (isRevalidation === false) {
+                return res.status(403).json({ valid: false, message: 'This key has already been used. Once removed, it cannot be reused.' });
+            }
+        } else {
+            user.deviceId = deviceId; // Pehli baar device ID set ho rahi hai
         }
-        if (!user.deviceId) {
-            user.deviceId = deviceId;
-        }
+
         user.lastSeen = new Date();
         await user.save();
         
-        // 🔥 HTML Payload for Exness
         res.json({
             valid: true,
             user: user.email,
@@ -166,7 +172,7 @@ app.post('/validate-license', async (req, res) => {
 // POST /validate-quotex-license (QUOTEX)
 app.post('/validate-quotex-license', async (req, res) => {
     try {
-        const { licenseKey, deviceId } = req.body;
+        const { licenseKey, deviceId, isRevalidation } = req.body; // Added isRevalidation
         if (!licenseKey || !deviceId) {
             return res.status(400).json({ valid: false, message: 'License key and Device ID are required.' });
         }
@@ -175,7 +181,6 @@ app.post('/validate-quotex-license', async (req, res) => {
             return res.status(404).json({ valid: false, message: 'Invalid license key.' });
         }
 
-        // 🔥 PLATFORM CHECK: Message generic kar diya hai
         if (user.platform !== 'quotex') {
             return res.status(403).json({ valid: false, message: 'Invalid license key.' });
         }
@@ -187,16 +192,23 @@ app.post('/validate-quotex-license', async (req, res) => {
         if (now > user.expiryDate) {
             return res.status(403).json({ valid: false, message: 'Your license has expired.' });
         }
-        if (user.deviceId && user.deviceId !== deviceId) {
-            return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
+
+        // 🔥 STRICT ONE-TIME USE LOGIC
+        if (user.deviceId) {
+            if (user.deviceId !== deviceId) {
+                return res.status(403).json({ valid: false, message: 'This key is already registered to another device.' });
+            }
+            // Agar UI se naya validation attempt hai (isRevalidation === false), toh block karo.
+            if (isRevalidation === false) {
+                return res.status(403).json({ valid: false, message: 'This key has already been used. Once removed, it cannot be reused.' });
+            }
+        } else {
+            user.deviceId = deviceId; // Pehli baar device ID set ho rahi hai
         }
-        if (!user.deviceId) {
-            user.deviceId = deviceId;
-        }
+
         user.lastSeen = new Date();
         await user.save();
         
-        // 🔥 Secret Payload for Quotex
         res.json({
             valid: true,
             user: user.email,
@@ -209,7 +221,7 @@ app.post('/validate-quotex-license', async (req, res) => {
     }
 });
 
-// 🔥 NAYA FEATURE: BURN ON LOGOUT (No features removed, exact formatting kept)
+// 🔥 NAYA FEATURE: BURN ON LOGOUT
 app.post('/revoke-license', async (req, res) => {
     try {
         const { licenseKey, deviceId } = req.body;
@@ -219,7 +231,6 @@ app.post('/revoke-license', async (req, res) => {
         
         const user = await License.findOne({ licenseKey });
         
-        // Agar same device hai, toh key ko permanently block kar do (isActive = false)
         if (user && user.deviceId === deviceId) {
             user.isActive = false;
             await user.save();
