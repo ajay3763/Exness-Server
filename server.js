@@ -209,6 +209,29 @@ app.post('/validate-quotex-license', async (req, res) => {
     }
 });
 
+// 🔥 NAYA FEATURE: BURN ON LOGOUT (No features removed, exact formatting kept)
+app.post('/revoke-license', async (req, res) => {
+    try {
+        const { licenseKey, deviceId } = req.body;
+        if (!licenseKey || !deviceId) {
+            return res.status(400).json({ success: false });
+        }
+        
+        const user = await License.findOne({ licenseKey });
+        
+        // Agar same device hai, toh key ko permanently block kar do (isActive = false)
+        if (user && user.deviceId === deviceId) {
+            user.isActive = false;
+            await user.save();
+            return res.json({ success: true, message: 'Key burned successfully.' });
+        }
+        res.status(400).json({ success: false });
+    } catch (error) {
+        console.error('--- REVOKE FAILED ---', error);
+        res.status(500).json({ success: false });
+    }
+});
+
 // --- API Routes for Admin Panel ---
 app.post('/admin-login', adminLoginLimiter, (req, res) => {
     const { password } = req.body;
