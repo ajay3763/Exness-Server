@@ -1,4 +1,4 @@
-// --- Admin Panel JavaScript (V5 - Dual Platform Supported) ---
+// --- Admin Panel JavaScript (V5 - Dual Platform Supported & Fixed) ---
 document.addEventListener('DOMContentLoaded', () => {
     // --- Basic Setup & Auth ---
     const password = sessionStorage.getItem('admin-password');
@@ -69,7 +69,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const statusText = user.isActive && !isExpired ? 'Active' : (isExpired ? 'Expired' : 'Inactive');
             const lastSeen = user.lastSeen ? new Date(user.lastSeen).toLocaleString('en-IN') : 'Never';
             
-            // 🔥 NAYA: Platform Badge setup
+            // 🔥 PLATFORM BADGE: Ab yahan se clear pata chalega
             const platformName = user.platform === 'quotex' ? 'Quotex' : 'Exness';
             const platformClass = user.platform === 'quotex' ? 'bg-blue-100 text-blue-800 border border-blue-300' : 'bg-yellow-100 text-yellow-800 border border-yellow-300';
             
@@ -102,11 +102,12 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Modal Logic ---
     const openModal = (user = null) => {
         userForm.reset();
+        
         if (user) {
             modalTitle.textContent = 'Edit User';
             document.getElementById('user-id').value = user._id; 
             
-            // 🔥 NAYA: Edit form mein Platform set karna
+            // Edit form mein Platform set karna
             document.getElementById('platform').value = user.platform || 'exness';
             
             document.getElementById('licenseKey').value = user.licenseKey;
@@ -126,12 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             modalTitle.textContent = 'Add New User';
             document.getElementById('user-id').value = '';
-            document.getElementById('platform').value = 'exness'; // Default to Exness
+            document.getElementById('platform').value = 'exness'; // Default
             document.getElementById('isActive').checked = true;
             deviceIdSection.classList.add('hidden');
         }
         userModal.classList.remove('hidden');
     };
+    
     const closeModal = () => userModal.classList.add('hidden');
 
     // --- Event Listeners ---
@@ -151,13 +153,16 @@ document.addEventListener('DOMContentLoaded', () => {
             user.email.toLowerCase().includes(searchTerm) ||
             user.licenseKey.toLowerCase().includes(searchTerm) ||
             (user.mobile && user.mobile.toLowerCase().includes(searchTerm)) ||
-            (user.platform && user.platform.toLowerCase().includes(searchTerm)) // Allow searching by platform
+            (user.platform && user.platform.toLowerCase().includes(searchTerm))
         );
         renderTable(filteredUsers);
     });
 
+    // 🔥 NAYA: Generate Button ab platform ke hisaab se Prefix dega (EXN- ya QTX-)
     document.getElementById('generate-key-btn').addEventListener('click', () => {
-        document.getElementById('licenseKey').value = `KEY-${self.crypto.randomUUID().toUpperCase().slice(0, 18)}`;
+        const platform = document.getElementById('platform').value;
+        const prefix = platform === 'quotex' ? 'QTX-' : 'EXN-';
+        document.getElementById('licenseKey').value = `${prefix}${self.crypto.randomUUID().toUpperCase().slice(0, 18)}`;
     });
 
     resetDeviceBtn.addEventListener('click', async () => {
@@ -177,9 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
     userForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const id = document.getElementById('user-id').value;
+        
+        // 🔥 NAYA: Platform Data yahan se jayega
         const userData = {
-            // 🔥 NAYA: Form save karte time platform bhejna
-            platform: document.getElementById('platform').value,
+            platform: document.getElementById('platform').value, 
             licenseKey: document.getElementById('licenseKey').value,
             email: document.getElementById('email').value,
             telegramId: document.getElementById('telegramId').value,
@@ -192,12 +198,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const url = id ? `/api/users/${id}` : '/api/users';
         const method = id ? 'PUT' : 'POST';
 
-        const response = await fetch(url, { method, headers: apiHeaders, body: JSON.stringify(userData) });
-        if (response.ok) {
-            closeModal();
-            fetchUsers();
-        } else {
-            alert('Failed to save user. Maybe License Key is duplicate?');
+        try {
+            const response = await fetch(url, { method, headers: apiHeaders, body: JSON.stringify(userData) });
+            if (response.ok) {
+                closeModal();
+                fetchUsers();
+            } else {
+                const errorData = await response.json();
+                alert(errorData.message || 'Failed to save user.');
+            }
+        } catch(error) {
+            alert("Network error occurred.");
         }
     });
 
@@ -206,6 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!btn) return;
         
         const id = btn.dataset.id;
+        
         if (btn.classList.contains('edit-btn')) {
             const userToEdit = allUsers.find(u => u._id === id); 
             if (userToEdit) openModal(userToEdit);
