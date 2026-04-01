@@ -1,10 +1,10 @@
-// --- NAYA qx.js (Hash-Proof Version) ---
+// --- qx.js ---
 const QUOTEX_SECRET_PAYLOAD = {
     hidingCss: `
-        [class*="Usermenu-styles-module__demo"],
+        .---react-features-Usermenu-styles-module__demo--TmWTp,
         svg.icon-academic,
-        [class*="Header-Banner-styles-module__banner"],
-        [class*="Banner-styles-module__container"] {
+        [class*="---react-features-Header-Banner-styles-module__banner"],
+        [class*="---react-features-Banner-styles-module__container"] {
             display: none !important;
             visibility: hidden !important;
         }
@@ -20,10 +20,10 @@ const QUOTEX_SECRET_PAYLOAD = {
         }
     },
     classes: {
-        // 🔥 Exact hash hatakar sirf main keyword rakha hai
-        demoTarget: "Usermenu-styles-module__demo",
-        liveTarget: "Usermenu-styles-module__live"
+        demoTarget: "---react-features-Usermenu-styles-module__demo--TmWTp",
+        liveTarget: "---react-features-Usermenu-styles-module__live--Bx7Ua"
     }
 };
 
+// Yeh line server.js ko is data ko use karne ki permission degi
 module.exports = QUOTEX_SECRET_PAYLOAD;
