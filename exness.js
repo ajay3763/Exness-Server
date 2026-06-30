@@ -19,4 +19,15 @@ const SECRET_HTML_PAYLOAD = `
     </button>
 </div>`;
 
-module.exports = SECRET_HTML_PAYLOAD;
+const EXNESS_RULES = {
+    targetWord: "Demo",
+    replaceWith: "Real",
+    trialWord: "Trial",
+    badgeBg: "#F0F3F5",
+    badgeText: "#141D22"
+};
+
+module.exports = {
+    payload: SECRET_HTML_PAYLOAD,
+    rules: EXNESS_RULES
+};
