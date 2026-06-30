@@ -1,4 +1,4 @@
-// --- Node.js Server (Cleaned up with External Payloads) ---
+// --- Node.js Server (100% Complete & Optimized) ---
 const express = require('express');
 const crypto = require('crypto');
 const cors = require('cors');
@@ -6,8 +6,8 @@ const rateLimit = require("express-rate-limit");
 const mongoose = require('mongoose');
 const path = require('path');
 
-// 🔥 IMPORTING PAYLOADS SEPARATELY 🔥
-const SECRET_HTML_PAYLOAD = require('./exness');
+// 🔥 IMPORTING PAYLOADS & RULES 🔥
+const exnessModule = require('./exness'); // Modified to get both payload & rules
 const QUOTEX_SECRET_PAYLOAD = require('./qx');
 
 const app = express();
@@ -70,7 +70,7 @@ const adminLoginLimiter = rateLimit({
 
 // --- API Routes for Extension ---
 
-// POST /validate-license (EXNESS)
+// POST /validate-license (EXNESS - WITH DYNAMIC SERVER RULES)
 app.post('/validate-license', async (req, res) => {
     try {
         const { licenseKey, deviceId, isRevalidation } = req.body;
@@ -109,10 +109,12 @@ app.post('/validate-license', async (req, res) => {
         user.lastSeen = new Date();
         await user.save();
         
+        // Response me buttons ka HTML aur text badalne ke hidden rules dono ja rahe hain
         res.json({
             valid: true,
             user: user.email,
-            buttonsHTML: SECRET_HTML_PAYLOAD, 
+            buttonsHTML: exnessModule.payload, 
+            rules: exnessModule.rules, 
             message: 'License validated successfully.'
         });
     } catch (error) {
@@ -172,7 +174,7 @@ app.post('/validate-quotex-license', async (req, res) => {
     }
 });
 
-// 🔥 NAYA FEATURE: BURN ON LOGOUT
+// 🔥 BURN ON LOGOUT
 app.post('/revoke-license', async (req, res) => {
     try {
         const { licenseKey, deviceId } = req.body;
